@@ -24,5 +24,3 @@ class Client
 
   update_timeout: (offset) ->
     @last_received = new Date().getTime() + offset
-
-@client = Client.new()

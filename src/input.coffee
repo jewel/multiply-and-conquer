@@ -1,8 +1,10 @@
-class Input
+class @Input
   constructor: (state) ->
     @keys_pressed = {}
     @mouse_pressed = false
     @mouse_pos = null
+    @canvas = document.getElementById('map')
+    @state = state
 
     window.onkeydown = (e) =>
       @keys_pressed[e.which] = true
@@ -14,13 +16,19 @@ class Input
 
     window.onmousedown = (e) =>
       @mouse_pressed = true
+
       false
 
     window.onmouseup = (e) =>
       @mouse_pressed = false
+
+      x = e.clientX + window.scrollX - @canvas.offsetLeft
+      y = e.clientY + window.scrollY - @canvas.offsetTop
+      @state.dest = { x: x, y: y }
+
       false
 
-    document.onmousemove = (e) =>
-      @mouse_pos = e
+    #document.onmousemove = (e) =>
+    #  @mouse_pos = e
 
   get_input: ->

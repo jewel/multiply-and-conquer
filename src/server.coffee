@@ -2,7 +2,6 @@ http = require 'http'
 url = require 'url'
 fs = require 'fs'
 io = require 'socket.io'
-{Vector} = require './vector'
 
 send404 = (res) ->
   res.writeHead(404)

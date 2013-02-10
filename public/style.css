@@ -4,7 +4,7 @@ body {
   -webkit-user-select: none;
 }
 
-#field {
+#map {
   margin: 20px;
   border: 1px solid black;
 }

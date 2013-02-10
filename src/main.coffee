@@ -1,10 +1,13 @@
 # This contains the main code for the client, which sets up and connects all
 # the necessary pieces.
 
-state = 
+machine = new Machine()
+display = new Display(machine)
+input = new Input(machine)
 
 setInterval(
   ->
-    State
+    machine.update()
+    display.draw()
   30
 )
