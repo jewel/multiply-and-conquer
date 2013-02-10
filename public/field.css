@@ -1,0 +1,10 @@
+body {
+  background: #aaa;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#field {
+  margin: 20px;
+  border: 1px solid black;
+}
