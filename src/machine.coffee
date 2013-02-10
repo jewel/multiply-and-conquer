@@ -14,6 +14,7 @@ class @Unit
     @x = x
     @y = y
     @intensity = Math.random()
+    @stuck = 0
 
 class @Machine
   constructor: ->
@@ -34,7 +35,7 @@ class @Machine
         @units.push unit
         @set x, y, unit
 
-    for i in [200..300]
+    for i in [200..300] by 2
       @impassable.push { x: i, y: 200 }
       @impassable.push { x: 200, y: i }
       @impassable.push { x: i, y: 300 }
@@ -47,19 +48,18 @@ class @Machine
       @set i.x, i.y, true
 
   update: ->
-
-    moved = []
-    stuck = []
-
     cmp = (a, b) ->
       if a < b then -1 else if a > b then 1 else 0
+
+    @units = @units.sort (a, b) ->
+      cmp(b.stuck, a.stuck)
 
     for unit in @units
       # Try to move closer to our destination
       # We will move diagonally directly toward it if we can
       x = cmp( @dest.x, unit.x )
       y = cmp( @dest.y, unit.y )
-      moved.push unit
+      unit.stuck = 0 if unit.stuck < 0
 
       continue if @try_move unit, x, y
       # next we will try to move horizontally or vertical towards it.
@@ -83,12 +83,7 @@ class @Machine
       continue if @try_move unit, 1, -1
       continue if @try_move unit, -1, 1
 
-      moved.pop()
-      stuck.push unit
-
-    # Let stuck units move last next time, increasing their chance of movement
-    # (since peers will be out of the way)
-    @units = moved.concat stuck
+      unit.stuck += 5
 
   # private
 
@@ -113,6 +108,8 @@ class @Machine
     return false unless @valid(dest_x, dest_y)
     return false if @get(dest_x, dest_y)
     @move unit, dest_x, dest_y
+    unit.stuck -= 10
+    unit.stuck = 0 if unit.stuck < 0
     true
 
   move: (unit, x, y) ->

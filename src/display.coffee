@@ -14,7 +14,7 @@ class @Display
 
     @image = @ctx.getImageData 0, 0, @width, @height
     for unit in @state.units
-      @set unit.x, unit.y, 0, 0, Math.floor(unit.intensity * 255)
+      @set unit.x, unit.y, unit.stuck, 0, Math.floor(unit.intensity * 255)
 
     for pos in @state.impassable
       @set pos.x, pos.y, 255, 0, 0
