@@ -22,13 +22,11 @@ class @Input
     window.onmouseup = (e) =>
       @mouse_pressed = false
 
+      false
+
+    document.onmousemove = (e) =>
       x = e.clientX + window.scrollX - @canvas.offsetLeft
       y = e.clientY + window.scrollY - @canvas.offsetTop
       @state.dest = { x: x, y: y }
-
-      false
-
-    #document.onmousemove = (e) =>
-    #  @mouse_pos = e
 
   get_input: ->

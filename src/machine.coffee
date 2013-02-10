@@ -34,10 +34,17 @@ class @Machine
         @units.push unit
         @set x, y, unit
 
-    for x in [100..200]
-      for y in [100..200]
-        @impassable.push { x: x, y: y }
-        @set x, y, true
+    for i in [200..300]
+      @impassable.push { x: i, y: 200 }
+      @impassable.push { x: 200, y: i }
+      @impassable.push { x: i, y: 300 }
+      @impassable.push { x: 300, y: i }
+
+    for i in [0..200]
+      @impassable.push { x: i, y: Math.round(Math.cos(i/100)*100 + 200) }
+
+    for i in @impassable
+      @set i.x, i.y, true
 
   update: ->
 
@@ -98,7 +105,7 @@ class @Machine
 
   check_bounds: (x, y) ->
     unless @valid x, y
-      throw new Exception("Out of bounds in get()")
+      throw "Out of bounds (#{x}, #{y})"
 
   try_move: (unit, x, y) ->
     dest_x = unit.x + x
@@ -110,7 +117,7 @@ class @Machine
 
   move: (unit, x, y) ->
     if @get(x, y)
-      throw new Exception("Can't move to #{x}, #{y}.  There is already someone there.")
+      throw "Can't move to #{x}, #{y}.  There is already someone there."
     @set unit.x, unit.y, null
     @set x, y, unit
     unit.x = x
