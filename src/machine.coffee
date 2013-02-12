@@ -62,7 +62,7 @@ class @Machine
       # We will move diagonally directly toward it if we can
       x = cmp( dest.x, unit.x )
       y = cmp( dest.y, unit.y )
-      unit.stuck = 0 if unit.stuck < 0
+      continue if x == 0 and y == 0
 
       continue if @try_move unit, x, y
       # next we will try to move horizontally or vertical towards it.

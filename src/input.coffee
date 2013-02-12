@@ -59,11 +59,23 @@ class @Input
 
   right_mouse_up: (e) ->
     dest = @get_mouse_coords(e)
+    selected_count = 0
+    for unit in @machine.units
+      selected_count += 1 if unit.selected
+
+    row_size = Math.sqrt(selected_count) * 2
+
+    column = 0
+    row = 0
     for unit in @machine.units
       continue unless unit.selected
       unit.dest =
-        x: dest[0]
-        y: dest[1]
+        x: Math.round(dest[0] - row_size / 2 + column)
+        y: Math.round(dest[1] - row_size / 2 + row)
+      column += 2
+      if column > row_size
+        row += 2
+        column = 0
 
   right_mouse_move: (e) ->
 
