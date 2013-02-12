@@ -2,5 +2,9 @@
 # display correctly or interpret user input, but isn't synchronized over the
 # network, nor does it contain the state of individual units (who are all
 # tracked by StateMachine).
-class State
+class @State
   constructor: ->
+    @selection = {
+      start: null,
+      end: null
+    }

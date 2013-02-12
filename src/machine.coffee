@@ -2,7 +2,8 @@
 # machines, including the server.  The simulation will run at the same speed on
 # all machines.
 #
-# Be very careful about doing anything with rand() in here.
+# Don't use rand() directly in here.  Instead, pre-generate an array of random
+# floats and keep reusing it.
 #
 # Since we aren't very sensitive to lag in a RTS, we don't ever do anything
 # that hasn't been approved by the server first.  That saves us from needing to
@@ -15,6 +16,8 @@ class @Unit
     @y = y
     @intensity = Math.random()
     @stuck = 0
+    @dest = null
+    @selected = false
 
 class @Machine
   constructor: ->
@@ -22,10 +25,6 @@ class @Machine
     @impassable = []
     @height = 400
     @width = 400
-    @dest = {
-      x: 300,
-      y: 300
-    }
 
     @map = []
 
@@ -55,16 +54,20 @@ class @Machine
       cmp(b.stuck, a.stuck)
 
     for unit in @units
+      continue unless unit.dest
+
+      dest = unit.dest
+
       # Try to move closer to our destination
       # We will move diagonally directly toward it if we can
-      x = cmp( @dest.x, unit.x )
-      y = cmp( @dest.y, unit.y )
+      x = cmp( dest.x, unit.x )
+      y = cmp( dest.y, unit.y )
       unit.stuck = 0 if unit.stuck < 0
 
       continue if @try_move unit, x, y
       # next we will try to move horizontally or vertical towards it.
       # Finally, we should try and move diagonally perpendicular to our goal
-      if Math.abs( unit.x - @dest.x ) > Math.abs( unit.y - @dest.y )
+      if Math.abs( unit.x - dest.x ) > Math.abs( unit.y - dest.y )
         continue if @try_move unit, x, 0
         continue if @try_move unit, 0, y
         continue if @try_move unit, x, -y
@@ -84,6 +87,7 @@ class @Machine
       continue if @try_move unit, -1, 1
 
       unit.stuck += 5
+      unit.stuck = 255 if unit.stuck > 255
 
   # private
 

@@ -1,8 +1,9 @@
 class @Display
-  constructor: (state) ->
+  constructor: (state, machine) ->
     @canvas = document.getElementById( 'map' )
     @ctx = @canvas.getContext('2d')
     @state = state
+    @machine = machine
     @width = 400
     @height = 400
 
@@ -13,15 +14,37 @@ class @Display
     @ctx.restore()
 
     @image = @ctx.getImageData 0, 0, @width, @height
-    for unit in @state.units
-      @set unit.x, unit.y, unit.stuck, 0, Math.floor(unit.intensity * 255)
+    for unit in @machine.units
+      r = unit.stuck
+      g = 0
+      b = Math.floor(unit.intensity * 255)
+      if unit.selected
+        g = b
+        b = 0
+      @set unit.x, unit.y, r, g, b
 
-    for pos in @state.impassable
+    for pos in @machine.impassable
       @set pos.x, pos.y, 255, 0, 0
 
     @ctx.putImageData @image, 0, 0
 
+    @draw_selection()
+
+
   # private
+  draw_selection: ->
+    return unless @state.selection.start and @state.selection.end
+
+    rect = MapRect.from_coords @state.selection.start, @state.selection.end
+
+    @ctx.save()
+    @ctx.strokeStyle = '#000'
+    @ctx.strokeRect( rect.x + 1, rect.y + 1, rect.w, rect.h )
+
+    @ctx.strokeStyle = '#0f0'
+    @ctx.strokeRect( rect.x, rect.y, rect.w, rect.h )
+    @ctx.restore()
+
   set: (x, y, r, g, b) ->
     data = @image.data
     index = (x + y * @width) * 4

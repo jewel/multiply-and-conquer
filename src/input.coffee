@@ -1,32 +1,74 @@
 class @Input
-  constructor: (state) ->
-    @keys_pressed = {}
-    @mouse_pressed = false
-    @mouse_pos = null
+  constructor: (state, machine) ->
     @canvas = document.getElementById('map')
     @state = state
+    @machine = machine
 
-    window.onkeydown = (e) =>
-      @keys_pressed[e.which] = true
-      e.which != 32 && ( e.which < 37 || e.which > 40 )
+    @canvas.oncontextmenu = -> false
 
-    window.onkeyup = (e) =>
-      @keys_pressed[e.which] = false
-      e.which != 32 && ( e.which < 37 || e.which > 40 )
+    document.onmousedown = (e) =>
+      if e.button == 0
+        @left_mouse_down(e)
+        false
+      else if e.button == 2
+        @right_mouse_down(e)
+        false
+      else
+        true
 
-    window.onmousedown = (e) =>
-      @mouse_pressed = true
-
-      false
-
-    window.onmouseup = (e) =>
-      @mouse_pressed = false
-
-      false
+    document.onmouseup = (e) =>
+      if e.button == 0
+        @left_mouse_up(e)
+        false
+      else if e.button == 2
+        @right_mouse_up(e)
+        false
+      else
+        true
 
     document.onmousemove = (e) =>
-      x = e.clientX + window.scrollX - @canvas.offsetLeft
-      y = e.clientY + window.scrollY - @canvas.offsetTop
-      @state.dest = { x: x, y: y }
+      if e.button == 0
+        @left_mouse_move(e)
+        false
+      else if e.button == 2
+        @right_mouse_move(e)
+        false
+      else
+        true
 
-  get_input: ->
+  # private
+  left_mouse_down: (e) ->
+    @state.selection.start = @get_mouse_coords(e)
+
+  left_mouse_up: (e) ->
+    @state.selection.end = @get_mouse_coords(e)
+
+    rect = MapRect.from_coords @state.selection.start, @state.selection.end
+
+    for unit in @machine.units
+      unit.selected = rect.inside unit.x, unit.y
+
+    @state.selection.start = null
+    @state.selection.end = null
+
+  left_mouse_move: (e) ->
+    @state.selection.end = @get_mouse_coords(e)
+
+
+  right_mouse_down: (e) ->
+
+  right_mouse_up: (e) ->
+    dest = @get_mouse_coords(e)
+    for unit in @machine.units
+      continue unless unit.selected
+      unit.dest =
+        x: dest[0]
+        y: dest[1]
+
+  right_mouse_move: (e) ->
+
+  get_mouse_coords: (e) ->
+    [
+      e.clientX + window.scrollX - @canvas.offsetLeft
+      e.clientY + window.scrollY - @canvas.offsetTop
+    ]
