@@ -29,9 +29,21 @@ class @Display
     @ctx.putImageData @image, 0, 0
 
     @draw_selection()
+    @draw_destination()
 
+  draw_destination: ->
+    @ctx.save()
+    @ctx.strokeStyle = 'rgba(0,0,0,0.05)'
+    for unit in @machine.units
+      continue unless unit.selected
+      continue if unit.dests.length == 0
+      dest = unit.dests[0]
+      @ctx.beginPath()
+      @ctx.moveTo(unit.x, unit.y)
+      @ctx.lineTo(dest.x, dest.y)
+      @ctx.stroke()
+    @ctx.restore()
 
-  # private
   draw_selection: ->
     return unless @state.selection.start and @state.selection.end
 

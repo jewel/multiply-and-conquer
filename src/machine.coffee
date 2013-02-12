@@ -16,7 +16,7 @@ class @Unit
     @y = y
     @intensity = Math.random()
     @stuck = 0
-    @dest = null
+    @dests = []
     @selected = false
 
 class @Machine
@@ -51,43 +51,65 @@ class @Machine
       if a < b then -1 else if a > b then 1 else 0
 
     @units = @units.sort (a, b) ->
-      cmp(b.stuck, a.stuck)
+      cmp(a.stuck, b.stuck)
 
     for unit in @units
-      continue unless unit.dest
+      unit.moved = false
 
-      dest = unit.dest
+    for unit in @units
+      continue if unit.moved
+      dest = unit.dests[0]
+      unless dest
+        unit.stuck -= 15
+        unit.stuck = 0 if unit.stuck < 0
+        continue
+
+      shove = 1
+      shove = dest.shove if dest.shove?
+
+      if dest.wait?
+        if dest.wait < 0
+          delete dest.wait
+        else
+          dest.wait--
+          continue
 
       # Try to move closer to our destination
       # We will move diagonally directly toward it if we can
       x = cmp( dest.x, unit.x )
       y = cmp( dest.y, unit.y )
-      continue if x == 0 and y == 0
+      if x == 0 and y == 0 or dest.tries? and dest.tries < 0
+        unit.dests.shift()
+        continue
 
-      continue if @try_move unit, x, y
+      continue if @try_move unit, x, y, shove
+      unit.stuck += 20
       # next we will try to move horizontally or vertical towards it.
       # Finally, we should try and move diagonally perpendicular to our goal
       if Math.abs( unit.x - dest.x ) > Math.abs( unit.y - dest.y )
         continue if @try_move unit, x, 0
+        continue if @try_move unit, x, 1
+        continue if @try_move unit, x, -1
         continue if @try_move unit, 0, y
-        continue if @try_move unit, x, -y
       else
         continue if @try_move unit, 0, y
+        continue if @try_move unit, 1, y
+        continue if @try_move unit, -1, y
         continue if @try_move unit, x, 0
-        continue if @try_move unit, -x, y
 
-      # Can we move at all?
-      continue if @try_move unit, 1, 1
-      continue if @try_move unit, 1, 0
-      continue if @try_move unit, 0, 1
-      continue if @try_move unit, -1, -1
-      continue if @try_move unit, -1, 0
-      continue if @try_move unit, 0, -1
-      continue if @try_move unit, 1, -1
-      continue if @try_move unit, -1, 1
+      # Try going a new direction temporarily
+      # if unit.stuck > 100
+      #   continue if @try_move unit,  1,  1
+      #   continue if @try_move unit,  0,  1
+      #   continue if @try_move unit, -1,  1
+      #   continue if @try_move unit,  1,  0
+      #   continue if @try_move unit, -1,  0
+      #   continue if @try_move unit,  1, -1
+      #   continue if @try_move unit,  0, -1
+      #   continue if @try_move unit, -1, -1
 
-      unit.stuck += 5
-      unit.stuck = 255 if unit.stuck > 255
+      dest.tries-- if dest.tries?
+      unit.stuck = 300 if unit.stuck > 300
 
   # private
 
@@ -106,13 +128,43 @@ class @Machine
     unless @valid x, y
       throw "Out of bounds (#{x}, #{y})"
 
-  try_move: (unit, x, y) ->
+  try_move: (unit, x, y, shove=0) ->
+    return false if x == 0 and y == 0
     dest_x = unit.x + x
     dest_y = unit.y + y
     return false unless @valid(dest_x, dest_y)
-    return false if @get(dest_x, dest_y)
+    other = @get(dest_x, dest_y)
+    return false if other == true
+    if other
+      return false unless shove
+      return false if other.moved
+      return false unless unit.stuck > 150
+      # unit in our way has a destination, try switching orders
+      if other.dests.length == 0
+        # make sure unit gets back to where it goes
+        other.dests.push
+          x: other.x
+          y: other.y
+          wait: 2
+      else
+        other.dests[0].wait = 1
+
+      temp = other.dests
+      other.dests = unit.dests
+      unit.dests = temp
+      # also switch selection state
+      temp = other.selected
+      other.selected = unit.selected
+      unit.selected = temp
+      unit.moved = true
+      other.moved = true
+      other.stuck -= 1
+
+      # other.stuck = unit.stuck = Math.max( other.stuck, unit.stuck )
+      return true
     @move unit, dest_x, dest_y
-    unit.stuck -= 10
+    unit.moved = true
+    unit.stuck -= 15
     unit.stuck = 0 if unit.stuck < 0
     true
 

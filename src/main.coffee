@@ -10,5 +10,5 @@ setInterval(
   ->
     machine.update()
     display.draw()
-  30
+  50
 )

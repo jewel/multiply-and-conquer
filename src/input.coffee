@@ -59,22 +59,26 @@ class @Input
 
   right_mouse_up: (e) ->
     dest = @get_mouse_coords(e)
-    selected_count = 0
-    for unit in @machine.units
-      selected_count += 1 if unit.selected
 
-    row_size = Math.sqrt(selected_count) * 2
+    selected = []
+    for unit in @machine.units
+      if unit.selected
+        unit.dests = []
+        selected.push unit
+
+    row_size = Math.sqrt(selected.length)
 
     column = 0
     row = 0
-    for unit in @machine.units
-      continue unless unit.selected
-      unit.dest =
-        x: Math.round(dest[0] - row_size / 2 + column)
-        y: Math.round(dest[1] - row_size / 2 + row)
-      column += 2
+    spacing = 1.5
+
+    for unit in selected
+      unit.dests.push
+        x: Math.round(dest[0] - row_size/2*spacing + column * spacing)
+        y: Math.round(dest[1] - row_size/2*spacing + row * spacing)
+      column++
       if column > row_size
-        row += 2
+        row++
         column = 0
 
   right_mouse_move: (e) ->
