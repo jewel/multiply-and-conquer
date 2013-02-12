@@ -50,13 +50,13 @@ class @Machine
     cmp = (a, b) ->
       if a < b then -1 else if a > b then 1 else 0
 
-    @units = @units.sort (a, b) ->
+    prioritized_units = @units.sort (a, b) ->
       cmp(a.stuck, b.stuck)
 
     for unit in @units
       unit.moved = false
 
-    for unit in @units
+    for unit in prioritized_units
       continue if unit.moved
       dest = unit.dests[0]
       unless dest
@@ -109,7 +109,7 @@ class @Machine
       #   continue if @try_move unit, -1, -1
 
       dest.tries-- if dest.tries?
-      unit.stuck = 300 if unit.stuck > 300
+      unit.stuck = 1024 if unit.stuck > 1024
 
   # private
 

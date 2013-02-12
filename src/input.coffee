@@ -70,7 +70,7 @@ class @Input
 
     column = 0
     row = 0
-    spacing = 1.5
+    spacing = 1
 
     for unit in selected
       unit.dests.push
