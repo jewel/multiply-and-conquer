@@ -10,7 +10,7 @@
 # backtrack.  We will adjust the speed of the simulation so that it stays a
 # little bit behind our worst ping time in the last five seconds.
 
-class @Unit
+class Unit
   constructor: (x, y) ->
     @x = x
     @y = y
@@ -18,12 +18,18 @@ class @Unit
     @stuck = 0
     @dests = []
 
-class @Machine
+class Machine
   constructor: ->
+    @wipe()
+
+  wipe: ->
+    @server_tick = 0
     @units = []
     @impassable = []
     @height = 400
     @width = 400
+    @tick = 0
+    @pending_orders = []
 
     @last_id = 0
 
@@ -33,7 +39,7 @@ class @Machine
     for x in [20..70]
       for y in [20..70]
         unit = new Unit(x, y)
-        unit.id = ++@last_id
+        unit.id = @units.length
         unit.team = 1
         @units.push unit
         @set x, y, unit
@@ -41,7 +47,7 @@ class @Machine
     for x in [300..350]
       for y in [300..350]
         unit = new Unit(x, y)
-        unit.id = ++@last_id
+        unit.id = @units.length
         unit.team = 2
         @units.push unit
         @set x, y, unit
@@ -57,7 +63,19 @@ class @Machine
     for i in @impassable
       @set i.x, i.y, true
 
+  new_orders: (msg) ->
+    @pending_orders.push msg
+
   update: ->
+    return if @tick >= @server_tick
+    @tick++
+
+    while @pending_orders.length > 0
+      first = @pending_orders.shift()
+      break if first.tick > @tick
+      unit = @units[first.id]
+      unit.dests = first.orders
+
     cmp = (a, b) ->
       if a < b then -1 else if a > b then 1 else 0
 
@@ -108,25 +126,34 @@ class @Machine
         continue if @try_move unit, -1, y
         continue if @try_move unit, x, 0
 
-      # Try going a new direction temporarily
-      # if unit.stuck > 100
-      #   continue if @try_move unit,  1,  1
-      #   continue if @try_move unit,  0,  1
-      #   continue if @try_move unit, -1,  1
-      #   continue if @try_move unit,  1,  0
-      #   continue if @try_move unit, -1,  0
-      #   continue if @try_move unit,  1, -1
-      #   continue if @try_move unit,  0, -1
-      #   continue if @try_move unit, -1, -1
-
       dest.tries-- if dest.tries?
       unit.stuck = 1024 if unit.stuck > 1024
 
-  # private
+  serialize: ->
+    units: @units
+    impassable: @impassable
+    tick: @tick
+
+  deserialize: (msg) ->
+    @wipe()
+    @tick = msg.tick
+
+    for u in msg.units
+      unit = new Unit()
+      for k, v of u
+        unit[k] = v
+      @units.push unit
+      @set unit.x, unit.y, unit
+
+    for i in msg.impassable
+      @impassable.push i
+      @set i.x, i.y, true
 
   get: (x, y) ->
     @check_bounds x, y
     @map[y*@width+x]
+
+  # private
 
   set: (x, y, val) ->
     @check_bounds x, y
@@ -186,3 +213,6 @@ class @Machine
     @set x, y, unit
     unit.x = x
     unit.y = y
+
+root = exports ? this
+root.Machine = Machine

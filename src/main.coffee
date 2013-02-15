@@ -3,9 +3,11 @@
 
 state = new State()
 machine = new Machine()
-machine.generate()
 display = new Display(state, machine)
-input = new Input(state, machine)
+client = new Client(state, machine)
+input = new Input(state, machine, client)
+
+client.connect()
 
 setInterval(
   ->

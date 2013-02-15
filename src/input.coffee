@@ -1,5 +1,5 @@
 class @Input
-  constructor: (state, machine) ->
+  constructor: (state, machine, client) ->
     @canvas = document.getElementById('map')
     @state = state
     @machine = machine
@@ -7,6 +7,7 @@ class @Input
     @drag_position = null
     @dragging = null
     @last_group = 0
+    @client = client
 
     @canvas.oncontextmenu = -> false
 
@@ -124,7 +125,6 @@ class @Input
     for unit in @machine.units when unit.team is @state.team
       local = @state.local(unit)
       if local.selected
-        unit.dests = []
         local.group = new_group
         selected.push unit
 
@@ -158,7 +158,11 @@ class @Input
       unless get(pos[0], pos[1])
         unit = selected.shift()
         set pos[0], pos[1]
-        unit.dests.push { x: pos[0], y: pos[1] }
+
+        @client.send_orders unit, [
+          x: pos[0]
+          y: pos[1]
+        ]
 
       for offset in search_space
         new_pos = [pos[0] + offset[0], pos[1] + offset[1]]

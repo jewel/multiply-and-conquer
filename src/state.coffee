@@ -11,7 +11,7 @@ class LocalUnitState
 
 class @State
   constructor: (machine) ->
-    @team = 1
+    @team = 0
 
     # mouse position
     @selection = {
