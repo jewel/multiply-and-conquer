@@ -14,6 +14,11 @@ class @Display
     @ctx.restore()
 
     @image = @ctx.getImageData 0, 0, @width, @height
+    for unit in @machine.units when unit.selected
+      for dest in unit.dests
+        i = Math.floor(unit.intensity * 127)
+        @set dest.x, dest.y, i, i, i
+
     for unit in @machine.units
       r = unit.stuck
       g = 0
@@ -29,19 +34,20 @@ class @Display
     @ctx.putImageData @image, 0, 0
 
     @draw_selection()
-    @draw_destination()
+    @draw_orders()
 
-  draw_destination: ->
+  draw_orders: ->
+    return unless @state.orders.length > 1
     @ctx.save()
-    @ctx.strokeStyle = 'rgba(0,0,0,0.05)'
-    for unit in @machine.units
-      continue unless unit.selected
-      continue if unit.dests.length == 0
-      dest = unit.dests[0]
-      @ctx.beginPath()
-      @ctx.moveTo(unit.x, unit.y)
-      @ctx.lineTo(dest.x, dest.y)
-      @ctx.stroke()
+    @ctx.strokeStyle = 'rgba(0,80,0,0.5)'
+
+    first = @state.orders
+    @ctx.beginPath()
+    @ctx.moveTo first[0], first[1]
+    for order in @state.orders[1..]
+      @ctx.lineTo order[0], order[1]
+
+    @ctx.stroke()
     @ctx.restore()
 
   draw_selection: ->
