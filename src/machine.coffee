@@ -18,6 +18,7 @@ class @Unit
     @stuck = 0
     @dests = []
     @selected = false
+    @group = 0
 
 class @Machine
   constructor: ->
@@ -139,7 +140,7 @@ class @Machine
       return false unless shove
       return false if other.moved
       return false unless unit.stuck > 150
-      # unit in our way has a destination, try switching orders
+      # unit in our way has a destination, switch places
       if other.dests.length == 0
         # make sure unit gets back to where it goes
         other.dests.push
@@ -147,20 +148,20 @@ class @Machine
           y: other.y
           wait: 2
       else
-        other.dests[0].wait = 1
+        other.dests[0].wait ||= 1
 
-      temp = other.dests
-      other.dests = unit.dests
-      unit.dests = temp
-      # also switch selection state
-      temp = other.selected
-      other.selected = unit.selected
-      unit.selected = temp
-      unit.moved = true
-      other.moved = true
+      swap = (prop) ->
+        temp = other[prop]
+        other[prop] = unit[prop]
+        unit[prop] = temp
+
+      swap 'x'
+      swap 'y'
+      swap 'stuck'
+      @set unit.x, unit.y, unit
+      @set other.x, other.y, other
+      unit.moved = other.moved = true
       other.stuck -= 1
-
-      # other.stuck = unit.stuck = Math.max( other.stuck, unit.stuck )
       return true
     @move unit, dest_x, dest_y
     unit.moved = true

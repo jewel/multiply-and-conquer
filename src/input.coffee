@@ -3,10 +3,16 @@ class @Input
     @canvas = document.getElementById('map')
     @state = state
     @machine = machine
+    @drag_time = null
+    @drag_position = null
+    @dragging = null
+    @last_group = 0
 
     @canvas.oncontextmenu = -> false
 
     document.onmousedown = (e) =>
+      @drag_start = new Date().getTime()
+      @drag_position = @get_mouse_coords(e)
       if e.button == 0
         @left_mouse_down(e)
         false
@@ -17,6 +23,15 @@ class @Input
         true
 
     document.onmouseup = (e) =>
+      # considered dragging if it's been longer 
+      now = new Date().getTime()
+      interval = now - @drag_start
+      pos = @get_mouse_coords(e)
+      prev = @drag_position
+      movement = Math.abs(pos[0] - prev[0]) + Math.abs(pos[1] - prev[1])
+
+      @dragging = interval > 200 or movement > 5
+
       if e.button == 0
         @left_mouse_up(e)
         false
@@ -39,14 +54,25 @@ class @Input
   # private
   left_mouse_down: (e) ->
     @state.selection.start = @get_mouse_coords(e)
+    @
 
   left_mouse_up: (e) ->
     @state.selection.end = @get_mouse_coords(e)
 
-    rect = MapRect.from_coords @state.selection.start, @state.selection.end
+    if @dragging
+      rect = MapRect.from_coords @state.selection.start, @state.selection.end
 
-    for unit in @machine.units
-      unit.selected = rect.inside unit.x, unit.y
+      for unit in @machine.units
+        unit.selected = rect.inside unit.x, unit.y
+    else
+      pos = @get_mouse_coords e
+      clicked = @machine.get(pos[0], pos[1])
+      clicked ||= @machine.get(pos[0]+1, pos[1])
+      clicked ||= @machine.get(pos[0], pos[1]+1)
+      clicked ||= @machine.get(pos[0]-1, pos[1])
+      clicked ||= @machine.get(pos[0], pos[1]-1)
+      for unit in @machine.units
+        unit.selected = clicked and clicked.group == unit.group
 
     @state.selection.start = null
     @state.selection.end = null
@@ -91,14 +117,24 @@ class @Input
     orders = [@get_mouse_coords(e)] if orders.length == 0
 
     selected = []
+    group = ++@last_group
     for unit in @machine.units
       if unit.selected
         unit.dests = []
+        unit.group = group
         selected.push unit
 
     assigned = {}
-    get = (x,y) ->
-      return assigned["#{x},#{y}"]
+    get = (x,y) =>
+      if assigned["#{x},#{y}"]
+        return true
+      unit = @machine.get(x, y)
+      return false unless unit
+      if unit == true
+        return true
+      return false if unit.group == group
+      if unit.dests.length == 0
+        return true
 
     set = (x,y) ->
       assigned["#{x},#{y}"] = true
