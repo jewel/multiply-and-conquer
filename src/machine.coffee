@@ -25,12 +25,12 @@ class Machine
   wipe: ->
     @server_tick = 0
     @units = []
+    @units_by_id = {}
     @impassable = []
     @height = 400
     @width = 400
     @tick = 0
     @pending_orders = []
-
     @last_id = 0
 
     @map = []
@@ -39,18 +39,20 @@ class Machine
     for x in [20..70]
       for y in [20..70]
         unit = new Unit(x, y)
-        unit.id = @units.length
+        unit.id = ++@last_id
         unit.team = 1
         @units.push unit
-        @set x, y, unit
 
     for x in [300..350]
       for y in [300..350]
         unit = new Unit(x, y)
-        unit.id = @units.length
+        unit.id = ++@last_id
         unit.team = 2
         @units.push unit
-        @set x, y, unit
+
+    for unit in @units
+      @units_by_id[unit.id] = unit
+      @set unit.x, unit.y, unit
 
     for i in [0..190]
       @impassable.push { x: i, y: Math.round(Math.cos(i/100)*100 + 200) }
@@ -71,9 +73,9 @@ class Machine
     @tick++
 
     while @pending_orders.length > 0
+      break if @pending_orders[0].tick > @tick
       first = @pending_orders.shift()
-      break if first.tick > @tick
-      unit = @units[first.id]
+      unit = @units_by_id[first.id]
       unit.dests = first.orders
 
     cmp = (a, b) ->
@@ -143,6 +145,7 @@ class Machine
       for k, v of u
         unit[k] = v
       @units.push unit
+      @units_by_id[unit.id] = unit
       @set unit.x, unit.y, unit
 
     for i in msg.impassable
@@ -175,6 +178,7 @@ class Machine
     return false if other == true
     if other
       return false unless shove
+      return false if other.team != unit.team
       return false if other.moved
       return false unless unit.stuck > 150
       # unit in our way has a destination, switch places
