@@ -62,8 +62,8 @@ class @Input
     if @dragging
       rect = MapRect.from_coords @state.selection.start, @state.selection.end
 
-      for unit in @machine.units
-        unit.selected = rect.inside unit.x, unit.y
+      for unit in @machine.units when unit.team is @state.team
+        @state.local(unit).selected = rect.inside unit.x, unit.y
     else
       pos = @get_mouse_coords e
       clicked = @machine.get(pos[0], pos[1])
@@ -71,8 +71,11 @@ class @Input
       clicked ||= @machine.get(pos[0], pos[1]+1)
       clicked ||= @machine.get(pos[0]-1, pos[1])
       clicked ||= @machine.get(pos[0], pos[1]-1)
-      for unit in @machine.units
-        unit.selected = clicked and clicked.group == unit.group
+      clicked = null if clicked and clicked.team != @state.team
+      clicked = @state.local(clicked) if clicked
+      for unit in @machine.units when unit.team is @state.team
+        local = @state.local(unit)
+        local.selected = clicked and clicked.group == local.group
 
     @state.selection.start = null
     @state.selection.end = null
@@ -117,11 +120,12 @@ class @Input
     orders = [@get_mouse_coords(e)] if orders.length == 0
 
     selected = []
-    group = ++@last_group
-    for unit in @machine.units
-      if unit.selected
+    new_group = ++@last_group
+    for unit in @machine.units when unit.team is @state.team
+      local = @state.local(unit)
+      if local.selected
         unit.dests = []
-        unit.group = group
+        local.group = new_group
         selected.push unit
 
     assigned = {}
@@ -132,7 +136,9 @@ class @Input
       return false unless unit
       if unit == true
         return true
-      return false if unit.group == group
+      return true unless unit.team is @state.team
+      local = @state.local(unit)
+      return false if local.group == new_group
       if unit.dests.length == 0
         return true
 
@@ -146,7 +152,7 @@ class @Input
       [ 0, -1 ],
     ]
     queue = orders
-    searched = {}
+    marked = {}
     while queue.length > 0 and selected.length > 0
       pos = queue.shift()
       unless get(pos[0], pos[1])
@@ -157,8 +163,8 @@ class @Input
       for offset in search_space
         new_pos = [pos[0] + offset[0], pos[1] + offset[1]]
         id = "#{new_pos[0]},#{new_pos[1]}"
-        unless searched[id]
-          searched[id] = true
+        unless marked[id]
+          marked[id] = true
           queue.push new_pos
 
     @state.orders = []

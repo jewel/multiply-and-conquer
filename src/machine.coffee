@@ -14,11 +14,9 @@ class @Unit
   constructor: (x, y) ->
     @x = x
     @y = y
-    @intensity = Math.random()
+    @team = 0
     @stuck = 0
     @dests = []
-    @selected = false
-    @group = 0
 
 class @Machine
   constructor: ->
@@ -27,22 +25,34 @@ class @Machine
     @height = 400
     @width = 400
 
+    @last_id = 0
+
     @map = []
 
-    for x in [10..90]
-      for y in [10..90]
+  generate: ->
+    for x in [20..70]
+      for y in [20..70]
         unit = new Unit(x, y)
+        unit.id = ++@last_id
+        unit.team = 1
         @units.push unit
         @set x, y, unit
 
-    for i in [200..300] by 2
-      @impassable.push { x: i, y: 200 }
-      @impassable.push { x: 200, y: i }
-      @impassable.push { x: i, y: 300 }
-      @impassable.push { x: 300, y: i }
+    for x in [300..350]
+      for y in [300..350]
+        unit = new Unit(x, y)
+        unit.id = ++@last_id
+        unit.team = 2
+        @units.push unit
+        @set x, y, unit
 
-    for i in [0..200]
+    for i in [0..190]
       @impassable.push { x: i, y: Math.round(Math.cos(i/100)*100 + 200) }
+      @impassable.push { x: i, y: Math.round(Math.cos(i/100)*100 + 200)+1 }
+
+    for i in [210..399]
+      @impassable.push { x: i, y: Math.round(Math.cos(i/100)*100 + 200) }
+      @impassable.push { x: i, y: Math.round(Math.cos(i/100)*100 + 200)+1 }
 
     for i in @impassable
       @set i.x, i.y, true

@@ -1,4 +1,4 @@
-class Client
+class @Client
   constructor: ->
     @socket = null
     @last_received = null

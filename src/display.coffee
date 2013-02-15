@@ -14,18 +14,29 @@ class @Display
     @ctx.restore()
 
     @image = @ctx.getImageData 0, 0, @width, @height
-    for unit in @machine.units when unit.selected
+    for unit in @machine.units
+      continue unless unit.team == @state.team
+      local = @state.local(unit)
+      continue unless @state.local(unit).selected
+
       for dest in unit.dests
-        i = Math.floor(unit.intensity * 127)
+        i = Math.floor(local.intensity * 127)
         @set dest.x, dest.y, i, i, i
 
     for unit in @machine.units
-      r = unit.stuck
-      g = 0
-      b = Math.floor(unit.intensity * 255)
-      if unit.selected
-        g = b
+      local = @state.local(unit)
+      if unit.team == @state.team
+        r = unit.stuck
+        g = 0
+        b = Math.floor(local.intensity * 255)
+        if local.selected
+          g = b
+          b = 0
+      else
+        r = Math.floor(local.intensity * 255)
+        g = 0
         b = 0
+
       @set unit.x, unit.y, r, g, b
 
     for pos in @machine.impassable
