@@ -54,11 +54,11 @@ class Machine
       @units_by_id[unit.id] = unit
       @set unit.x, unit.y, unit
 
-    for i in [0..190]
+    for i in [0..170]
       @impassable.push { x: i, y: Math.round(Math.cos(i/100)*100 + 200) }
       @impassable.push { x: i, y: Math.round(Math.cos(i/100)*100 + 200)+1 }
 
-    for i in [210..399]
+    for i in [240..399]
       @impassable.push { x: i, y: Math.round(Math.cos(i/100)*100 + 200) }
       @impassable.push { x: i, y: Math.round(Math.cos(i/100)*100 + 200)+1 }
 

@@ -9,7 +9,7 @@ class @Display
 
   draw: ->
     @ctx.save()
-    @ctx.fillStyle = '#fff'
+    @ctx.fillStyle = '#898'
     @ctx.fillRect 0, 0, @width, @height
     @ctx.restore()
 
@@ -17,10 +17,12 @@ class @Display
     for unit in @machine.units
       continue unless unit.team == @state.team
       local = @state.local(unit)
-      continue unless @state.local(unit).selected
 
       for dest in unit.dests
-        i = Math.floor(local.intensity * 127)
+        if local.selected
+          i = Math.floor local.intensity * 128
+        else
+          i = Math.floor local.intensity * 32 + 128 - 16
         @set dest.x, dest.y, i, i, i
 
     for unit in @machine.units
@@ -40,7 +42,7 @@ class @Display
       @set unit.x, unit.y, r, g, b
 
     for pos in @machine.impassable
-      @set pos.x, pos.y, 255, 0, 0
+      @set pos.x, pos.y, 0, 0, 0
 
     @ctx.putImageData @image, 0, 0
 
