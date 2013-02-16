@@ -67,11 +67,7 @@ class @Input
         @state.local(unit).selected = rect.inside unit.x, unit.y
     else
       pos = @get_mouse_coords e
-      clicked = @machine.get(pos[0], pos[1])
-      clicked ||= @machine.get(pos[0]+1, pos[1])
-      clicked ||= @machine.get(pos[0], pos[1]+1)
-      clicked ||= @machine.get(pos[0]-1, pos[1])
-      clicked ||= @machine.get(pos[0], pos[1]-1)
+      clicked = @get_unit_under_cursor(pos[0], pos[1])
       clicked = null if clicked and clicked.team != @state.team
       clicked = @state.local(clicked) if clicked
       for unit in @machine.units when unit.team is @state.team
@@ -80,6 +76,14 @@ class @Input
 
     @state.selection.start = null
     @state.selection.end = null
+
+  get_unit_under_cursor: (x, y) ->
+    unit = @machine.get x, y
+    unit ||= @machine.get x+1, y
+    unit ||= @machine.get x, y+1
+    unit ||= @machine.get x-1, y
+    unit ||= @machine.get x, y-1
+    unit
 
   left_mouse_move: (e) ->
     @state.selection.end = @get_mouse_coords(e)
@@ -90,7 +94,28 @@ class @Input
     @state.orders.push @get_mouse_coords(e)
 
   right_mouse_up: (e) ->
-    @state.orders.push @get_mouse_coords(e)
+    current_pos = @get_mouse_coords(e)
+
+    selected = []
+    new_group = ++@last_group
+    for unit in @machine.units when unit.team is @state.team
+      local = @state.local(unit)
+      if local.selected
+        local.group = new_group
+        selected.push unit
+
+    unit_under_cursor = @get_unit_under_cursor(current_pos[0], current_pos[1])
+    if !@dragging and unit_under_cursor and unit_under_cursor.team != @state.team
+      @state.orders = []
+      for unit in selected
+        @client.send_orders unit, [
+          x: current_pos[0]
+          y: current_pos[1]
+        ]
+
+      return
+
+    @state.orders.push current_pos
 
     prev = null
     orders = []
@@ -120,14 +145,6 @@ class @Input
 
     orders = [@get_mouse_coords(e)] if orders.length == 0
 
-    selected = []
-    new_group = ++@last_group
-    for unit in @machine.units when unit.team is @state.team
-      local = @state.local(unit)
-      if local.selected
-        local.group = new_group
-        selected.push unit
-
     assigned = {}
     get = (x,y) =>
       if assigned["#{x},#{y}"]
@@ -136,9 +153,9 @@ class @Input
       return false unless unit
       if unit == true
         return true
-      return true unless unit.team is @state.team
+      return false unless unit.team is @state.team # step on enemies
       local = @state.local(unit)
-      return false if local.group == new_group
+      return false if local.group == new_group # part of our group, so won't be here long
       if unit.dests.length == 0
         return true
 

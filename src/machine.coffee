@@ -16,6 +16,7 @@ class Unit
     @y = y
     @team = 0
     @stuck = 0
+    @health = 100
     @dests = []
 
 class Machine
@@ -41,13 +42,15 @@ class Machine
         unit = new Unit(x, y)
         unit.id = ++@last_id
         unit.team = 1
+        unit.health = Math.floor(Math.random()*20) + 80
         @units.push unit
 
-    for x in [300..350]
-      for y in [300..350]
+    for x in [80..130]
+      for y in [80..130]
         unit = new Unit(x, y)
         unit.id = ++@last_id
         unit.team = 2
+        unit.health = Math.floor(Math.random()*20) + 80
         @units.push unit
 
     for unit in @units
@@ -76,6 +79,7 @@ class Machine
       break if @pending_orders[0].tick > @tick
       first = @pending_orders.shift()
       unit = @units_by_id[first.id]
+      continue unless unit # might have died already
       unit.dests = first.orders
 
     cmp = (a, b) ->
@@ -89,6 +93,18 @@ class Machine
 
     for unit in prioritized_units
       continue if unit.moved
+
+      # TODO check if adjacent is on our team
+      adjacent_unit = @get unit.x+1, unit.y+1
+      adjacent_unit ||= @get unit.x+1, unit.y-1
+      adjacent_unit ||= @get unit.x-1, unit.y-1
+      adjacent_unit ||= @get unit.x-1, unit.y+1
+
+      if adjacent_unit and adjacent_unit.team != unit.team
+        adjacent_unit.health -= 4
+        unit.moved = true
+        continue
+
       dest = unit.dests[0]
       unless dest
         unit.stuck -= 15
@@ -96,7 +112,6 @@ class Machine
         continue
 
       shove = 1
-      shove = dest.shove if dest.shove?
 
       if dest.wait?
         if dest.wait < 0
@@ -131,6 +146,15 @@ class Machine
       dest.tries-- if dest.tries?
       unit.stuck = 1024 if unit.stuck > 1024
 
+    copy = @units
+    @units = []
+    for unit in copy
+      if unit.health <= 0
+        delete @units_by_id[unit.id]
+        @set unit.x, unit.y, null
+        continue
+      @units.push unit
+
   serialize: ->
     units: @units
     impassable: @impassable
@@ -153,7 +177,7 @@ class Machine
       @set i.x, i.y, true
 
   get: (x, y) ->
-    @check_bounds x, y
+    return true unless @valid
     @map[y*@width+x]
 
   # private
