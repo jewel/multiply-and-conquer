@@ -86,7 +86,7 @@ class Machine
       if a < b then -1 else if a > b then 1 else 0
 
     prioritized_units = @units.sort (a, b) ->
-      cmp(a.stuck, b.stuck)
+      cmp(a.stuck, b.stuck) || cmp(a.id, b.id)
 
     for unit in @units
       unit.moved = false
@@ -94,13 +94,10 @@ class Machine
     for unit in prioritized_units
       continue if unit.moved
 
-      # TODO check if adjacent is on our team
-      adjacent_unit = @get unit.x+1, unit.y+1
-      adjacent_unit ||= @get unit.x+1, unit.y-1
-      adjacent_unit ||= @get unit.x-1, unit.y-1
-      adjacent_unit ||= @get unit.x-1, unit.y+1
+      adjacent_unit = @find_adjacent unit.x, unit.y, (other) ->
+        other.team != unit.team
 
-      if adjacent_unit and adjacent_unit.team != unit.team
+      if adjacent_unit
         adjacent_unit.health -= 4
         unit.moved = true
         continue
@@ -176,8 +173,29 @@ class Machine
       @impassable.push i
       @set i.x, i.y, true
 
+  offsets: [
+    [ 0, 1 ]
+    [ 1, 0 ]
+    [ 0, -1 ]
+    [ -1, 0 ]
+    [ 1, 1 ]
+    [ 1, -1 ]
+    [ -1, -1 ]
+    [ -1, 1 ]
+  ]
+
+  find_adjacent: (x, y, where) ->
+    for offset in @offsets
+      unit = @get(x+offset[0], y+offset[1])
+      continue unless unit
+      continue if unit == true
+      continue unless where(unit)
+      return unit
+
+    return null
+
   get: (x, y) ->
-    return true unless @valid
+    return true unless @valid x, y
     @map[y*@width+x]
 
   # private
