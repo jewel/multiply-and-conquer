@@ -4,16 +4,18 @@ class @Display
     @ctx = @canvas.getContext('2d')
     @state = state
     @machine = machine
-    @width = 400
-    @height = 400
 
   draw: ->
+    if @canvas.height != @machine.height or @canvas.width != @machine.width
+      @canvas.height = @machine.height
+      @canvas.width = @machine.width
+
     @ctx.save()
     @ctx.fillStyle = '#898'
-    @ctx.fillRect 0, 0, @width, @height
+    @ctx.fillRect 0, 0, @machine.width, @machine.height
     @ctx.restore()
 
-    @image = @ctx.getImageData 0, 0, @width, @height
+    @image = @ctx.getImageData 0, 0, @machine.width, @machine.height
     for unit in @machine.units
       continue unless unit.team == @state.team
       local = @state.local(unit)
@@ -80,7 +82,7 @@ class @Display
 
   set: (x, y, r, g, b) ->
     data = @image.data
-    index = (x + y * @width) * 4
+    index = (x + y * @machine.width) * 4
     data[index + 0] = r
     data[index + 1] = g
     data[index + 2] = b

@@ -38,47 +38,6 @@ class Machine
 
     @map = []
 
-  generate: ->
-    for x in [20..40]
-      for y in [20..40]
-        unit = new Unit(x, y)
-        unit.id = ++@last_id
-        unit.team = 1
-        unit.health = Math.floor(Math.random()*20) + 80
-        @units.push unit
-
-    for x in [80..100]
-      for y in [80..100]
-        unit = new Unit(x, y)
-        unit.id = ++@last_id
-        unit.team = 2
-        unit.health = Math.floor(Math.random()*20) + 80
-        @units.push unit
-
-    for x in [180..190]
-      for y in [20..30]
-        unit = new Unit(x, y)
-        unit.id = ++@last_id
-        unit.team = 0
-        unit.power = 1000
-        unit.health = Math.floor(Math.random()*20) + 80
-        @units.push unit
-
-    for unit in @units
-      @units_by_id[unit.id] = unit
-      @set unit.x, unit.y, unit
-
-    for i in [0..170]
-      @impassable.push { x: i, y: Math.round(Math.cos(i/100)*100 + 200) }
-      @impassable.push { x: i, y: Math.round(Math.cos(i/100)*100 + 200)+1 }
-
-    for i in [240..399]
-      @impassable.push { x: i, y: Math.round(Math.cos(i/100)*100 + 200) }
-      @impassable.push { x: i, y: Math.round(Math.cos(i/100)*100 + 200)+1 }
-
-    for i in @impassable
-      @set i.x, i.y, true
-
   new_orders: (msg) ->
     @pending_orders.push msg
 
@@ -108,6 +67,10 @@ class Machine
 
       if unit.sapping
         other = @units_by_id[unit.sapping]
+        if !other
+          unit.sapping = 0
+          continue
+
         unit.dests = [
           x: other.x
           y: other.y
@@ -121,6 +84,14 @@ class Machine
             other.team = unit.team
 
       if !unit.sapping
+        other = @find_adjacent unit.x, unit.y, (other) ->
+          other.team != unit.team and other.team != 0
+
+        if other
+          other.health -= 4
+          unit.moved = true
+          continue
+
         other = @find_adjacent unit.x, unit.y, (other) ->
           other.team == unit.team and !other.moved and other.sapping > 0 or other.team == 0
 
@@ -136,14 +107,6 @@ class Machine
 
         if unit.power > 0
           unit.power--
-          continue
-
-        other = @find_adjacent unit.x, unit.y, (other) ->
-          other.team != unit.team and other.team != 0
-
-        if other
-          other.health -= 4
-          unit.moved = true
           continue
 
       dest = unit.dests[0]
@@ -200,15 +163,21 @@ class Machine
     units: @units
     impassable: @impassable
     tick: @tick
+    width: @width
+    height: @height
 
   deserialize: (msg) ->
     @wipe()
-    @tick = msg.tick
+    @tick = msg.tick || 0
+    @width = msg.width
+    @height = msg.height
 
     for u in msg.units
       unit = new Unit()
       for k, v of u
         unit[k] = v
+      unit.id ||= ++@last_id
+      unit.power ||= 200 if unit.team == 0
       @units.push unit
       @units_by_id[unit.id] = unit
       @set unit.x, unit.y, unit
