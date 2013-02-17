@@ -32,7 +32,7 @@ server.listen 3000
 
 console.log "Server running on http://localhost:3000"
 
-data = fs.readFileSync('maps/test.json', 'ascii')
+data = fs.readFileSync('maps/default.json', 'ascii')
 data = JSON.parse data
 
 machine = new Machine()

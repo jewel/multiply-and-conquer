@@ -9,24 +9,39 @@ input = new Input(state, machine, client)
 
 client.connect()
 
-draw_times = []
+times =
+  machine: []
+  display: []
 setInterval(
   ->
-    machine.update()
-    unless machine.server_tick - machine.tick > 5
+    time = (name, func) ->
       start = new Date().getTime()
-      display.draw()
+      func()
       end = new Date().getTime()
       mspf = end - start
-      draw_times.push mspf
-      if draw_times.length > 40
-        draw_times.shift()
+      dest = times[name]
+      dest.push mspf
+      if dest.length > 40
+        dest.shift()
+
+    time 'machine', ->
+      machine.update()
+
+    if machine.server_tick - machine.tick < 2
+      time 'display', ->
+        display.draw()
 
     if machine.tick % 40 == 0
-      sum = 0
-      for i in draw_times
-        sum += i
-      console.log Math.round(sum / draw_times.length)
+      msg = ""
+      total = 0
+      for name, values of times
+        sum = 0
+        for val in values
+          sum += val
+        avg = Math.round(sum / values.length)
+        total += avg
+        msg += "#{name}: #{avg}  "
 
+      console.log "#{msg}  total: #{total}"
   50
 )
