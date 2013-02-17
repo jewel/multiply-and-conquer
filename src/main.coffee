@@ -12,6 +12,7 @@ client.connect()
 setInterval(
   ->
     machine.update()
-    display.draw()
+    unless machine.server_tick - machine.tick > 5
+      display.draw()
   50
 )

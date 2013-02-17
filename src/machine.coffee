@@ -69,12 +69,15 @@ class Machine
         other = @units_by_id[unit.sapping]
         if !other
           unit.sapping = 0
+          unit.power = 20
           continue
 
-        unit.dests = [
-          x: other.x
-          y: other.y
-        ]
+        if unit.dests.length == 0 or !unit.dests[0].auto?
+          unit.dests.unshift
+            x: other.x
+            y: other.y
+            auto: true
+
         if other.team != 0
           unit.sapping = 0
         else
@@ -82,18 +85,31 @@ class Machine
           if other.power <= 0
             other.power = 0
             other.team = unit.team
+            other.dests = unit.dests.slice 0
 
       if !unit.sapping
         other = @find_adjacent unit.x, unit.y, (other) ->
           other.team != unit.team and other.team != 0
 
         if other
+          if unit.dests.length == 0 or !unit.dests[0].auto?
+            unit.dests.unshift
+              x: other.x
+              y: other.y
+              auto: true
+            if unit.dests.length == 1
+              unit.dests.push
+                x: unit.x
+                y: unit.y
+                auto: true
+
           other.health -= 4
           unit.moved = true
+          unit.power = 10
           continue
 
         other = @find_adjacent unit.x, unit.y, (other) ->
-          other.team == unit.team and !other.moved and other.sapping > 0 or other.team == 0
+          other.team == unit.team and other.sapping > 0 or other.team == 0
 
         if other
           if other.team == 0
@@ -101,7 +117,6 @@ class Machine
           else
             unit.sapping = other.sapping
 
-          unit.power = 80
           unit.moved = true
           continue
 
@@ -235,6 +250,7 @@ class Machine
       return false unless shove
       return false if other.team != unit.team
       return false if other.moved
+      return false if other.power > 0
       return false unless unit.stuck > 150
       # unit in our way has a destination, switch places
       if other.dests.length == 0
