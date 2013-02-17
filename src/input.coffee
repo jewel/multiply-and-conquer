@@ -8,6 +8,11 @@ class @Input
     @dragging = null
     @last_group = 0
     @client = client
+    @machine.on 'team_switch', (a, b) =>
+      al = @state.local(a)
+      bl = @state.local(b)
+      al.group = bl.group
+      al.selected = bl.selected
 
     @canvas.oncontextmenu = -> false
 

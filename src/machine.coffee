@@ -23,6 +23,8 @@ class Unit
 
 class Machine
   constructor: ->
+    @callbacks =
+      team_switch: []
     @wipe()
 
   wipe: ->
@@ -37,6 +39,9 @@ class Machine
     @last_id = 0
 
     @map = []
+
+  on: (event, func) ->
+    @callbacks[event].push func
 
   new_orders: (msg) ->
     @pending_orders.push msg
@@ -70,6 +75,7 @@ class Machine
         if !other
           unit.sapping = 0
           unit.power = 20
+          unit.moved = true
           continue
 
         if unit.dests.length == 0 or !unit.dests[0].auto?
@@ -80,12 +86,16 @@ class Machine
 
         if other.team != 0
           unit.sapping = 0
+          unit.power = 20
+          continue
         else
           other.power--
           if other.power <= 0
             other.power = 0
             other.team = unit.team
             other.dests = unit.dests.slice 0
+            for cb in @callbacks.team_switch
+              cb(other, unit)
 
       if !unit.sapping
         other = @find_adjacent unit.x, unit.y, (other) ->
@@ -115,7 +125,8 @@ class Machine
           if other.team == 0
             unit.sapping = other.id
           else
-            unit.sapping = other.sapping
+            sappee = @units_by_id[other.sapping]
+            unit.sapping = other.sapping if sappee and sappee.team == 0
 
           unit.moved = true
           continue
