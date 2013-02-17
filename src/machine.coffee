@@ -17,6 +17,8 @@ class Unit
     @team = 0
     @stuck = 0
     @health = 100
+    @sapping = 0
+    @power = 0
     @dests = []
 
 class Machine
@@ -37,19 +39,28 @@ class Machine
     @map = []
 
   generate: ->
-    for x in [20..70]
-      for y in [20..70]
+    for x in [20..40]
+      for y in [20..40]
         unit = new Unit(x, y)
         unit.id = ++@last_id
         unit.team = 1
         unit.health = Math.floor(Math.random()*20) + 80
         @units.push unit
 
-    for x in [80..130]
-      for y in [80..130]
+    for x in [80..100]
+      for y in [80..100]
         unit = new Unit(x, y)
         unit.id = ++@last_id
         unit.team = 2
+        unit.health = Math.floor(Math.random()*20) + 80
+        @units.push unit
+
+    for x in [180..190]
+      for y in [20..30]
+        unit = new Unit(x, y)
+        unit.id = ++@last_id
+        unit.team = 0
+        unit.power = 1000
         unit.health = Math.floor(Math.random()*20) + 80
         @units.push unit
 
@@ -93,14 +104,47 @@ class Machine
 
     for unit in prioritized_units
       continue if unit.moved
+      continue if unit.team == 0
 
-      adjacent_unit = @find_adjacent unit.x, unit.y, (other) ->
-        other.team != unit.team
+      if unit.sapping
+        other = @units_by_id[unit.sapping]
+        unit.dests = [
+          x: other.x
+          y: other.y
+        ]
+        if other.team != 0
+          unit.sapping = 0
+        else
+          other.power--
+          if other.power <= 0
+            other.power = 0
+            other.team = unit.team
 
-      if adjacent_unit
-        adjacent_unit.health -= 4
-        unit.moved = true
-        continue
+      if !unit.sapping
+        other = @find_adjacent unit.x, unit.y, (other) ->
+          other.team == unit.team and !other.moved and other.sapping > 0 or other.team == 0
+
+        if other
+          if other.team == 0
+            unit.sapping = other.id
+          else
+            unit.sapping = other.sapping
+
+          unit.power = 80
+          unit.moved = true
+          continue
+
+        if unit.power > 0
+          unit.power--
+          continue
+
+        other = @find_adjacent unit.x, unit.y, (other) ->
+          other.team != unit.team and other.team != 0
+
+        if other
+          other.health -= 4
+          unit.moved = true
+          continue
 
       dest = unit.dests[0]
       unless dest
@@ -175,12 +219,12 @@ class Machine
 
   offsets: [
     [ 0, 1 ]
-    [ 1, 0 ]
     [ 0, -1 ]
+    [ 1, 0 ]
     [ -1, 0 ]
     [ 1, 1 ]
-    [ 1, -1 ]
     [ -1, -1 ]
+    [ 1, -1 ]
     [ -1, 1 ]
   ]
 

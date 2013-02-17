@@ -107,7 +107,7 @@ class @Input
     unit_under_cursor = @get_unit_under_cursor(current_pos[0], current_pos[1])
     if !@dragging and unit_under_cursor and unit_under_cursor.team != @state.team
       @state.orders = []
-      for unit in selected
+      for unit in selected when unit.power == 0
         @client.send_orders unit, [
           x: current_pos[0]
           y: current_pos[1]
@@ -176,10 +176,11 @@ class @Input
         unit = selected.shift()
         set pos[0], pos[1]
 
-        @client.send_orders unit, [
-          x: pos[0]
-          y: pos[1]
-        ]
+        if unit.power == 0
+          @client.send_orders unit, [
+            x: pos[0]
+            y: pos[1]
+          ]
 
       for offset in search_space
         new_pos = [pos[0] + offset[0], pos[1] + offset[1]]

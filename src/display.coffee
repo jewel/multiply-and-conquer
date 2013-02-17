@@ -28,13 +28,14 @@ class @Display
     for unit in @machine.units
       local = @state.local(unit)
       if unit.team == @state.team
-        r = unit.stuck / 2
-        r = 127 if r > 127
+        r = 0
         g = 0
-        b = Math.floor(local.intensity * 127 + 128)
+        b = Math.floor(local.intensity * 127 + if unit.power then 0 else 127)
         if local.selected
           g = b
           b = 0
+      else if unit.team == 0
+        r = g = b = Math.floor(local.intensity * 64 + 191)
       else
         r = Math.floor(local.intensity * 127 + 128)
         g = 0
