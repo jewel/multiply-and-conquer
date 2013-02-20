@@ -119,7 +119,10 @@ class Machine
           continue
 
         other = @find_adjacent unit.x, unit.y, (other) ->
-          other.team == unit.team and other.sapping > 0 or other.team == 0
+          other.team == 0
+
+        other ||= @find_adjacent unit.x, unit.y, (other) ->
+          other.team == unit.team and other.sapping > 0
 
         if other
           if other.team == 0
