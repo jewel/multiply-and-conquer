@@ -126,7 +126,6 @@ class Machine
           if other.power <= 0
             other.power = 0
             other.team = unit.team
-            other.dests = unit.dests.slice 0
             for cb in @callbacks.team_switch
               cb(other, unit)
 
