@@ -11,18 +11,15 @@ class @Display
       @canvas.width = @machine.width
 
     @ctx.save()
-    @ctx.fillStyle = '#444'
+    @ctx.fillStyle = '#888'
     @ctx.fillRect 0, 0, @machine.width, @machine.height
     @ctx.restore()
-
 
     @image = @ctx.getImageData 0, 0, @machine.width, @machine.height
 
     for pos in @machine.impassable
       @set pos.x, pos.y, 0, 0, 0
 
-    @dests = []
-    @dests[@machine.width*@machine.height] = false
     for unit in @machine.units
       continue unless unit.team == @state.team
       local = @state.local(unit)
@@ -33,42 +30,14 @@ class @Display
         else
           i = Math.floor local.intensity * 32 + 64 - 16
         @set dest.x, dest.y, i, i, i
-        @dests[dest.y*@machine.width + dest.x] = true
 
-    if Uint8Array?
-      @drawn = new Uint8Array(@machine.width*@machine.height)
-    else
-      @drawn = []
-    for unit in @machine.units when unit.team == @state.team
-      @show_location unit.x, unit.y, 11
+    for unit in @machine.units
+      @draw_unit unit
 
     @ctx.putImageData @image, 0, 0
 
     @draw_selection()
     @draw_orders()
-
-  show_location: (x, y, depth) ->
-    depth--
-    return if depth <= 0
-    index = y * @machine.width + x
-    return if @drawn[index] >= depth
-
-    unless @drawn[index]
-      unit = @machine.get x, y
-      if unit == true
-        return
-      else if !unit
-        @set x, y, 127, 127+16, 127 unless @dests[index]
-      else
-        @draw_unit unit
-
-    @drawn[index] = depth
-    @show_location x+1, y, depth
-    @show_location x-1, y, depth
-    @show_location x, y+1, depth
-    @show_location x, y-1, depth
-    return
-
 
   draw_unit: (unit) ->
     local = @state.local(unit)
