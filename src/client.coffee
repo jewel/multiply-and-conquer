@@ -4,6 +4,7 @@ class @Client
     @last_received = null
     @state = state
     @machine = machine
+    @on_resync = ->
 
   connect: ->
     @socket = io.connect window.location.href
@@ -17,6 +18,9 @@ class @Client
 
     @socket.on 'machine', (msg) =>
       @machine.deserialize msg
+
+    @socket.on 'resync', (msg) =>
+      @on_resync(msg)
 
     @socket.on 'orders', (msg) =>
       @machine.new_orders msg
@@ -33,6 +37,9 @@ class @Client
     @socket.emit 'orders'
       id: unit.id
       orders: orders
+
+  resync: ->
+    @socket.emit 'resync'
 
   # Private
 

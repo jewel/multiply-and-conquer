@@ -75,6 +75,9 @@ io.sockets.on 'connection', (client) ->
     machine.new_orders msg
     broadcast_all 'orders', msg
 
+  client.on 'resync', ->
+    client.emit 'resync', machine.serialize()
+
   client.on 'error', ->
     console.log "error"
 

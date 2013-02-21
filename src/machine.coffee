@@ -14,6 +14,7 @@ class Unit
   constructor: (x, y) ->
     @x = x
     @y = y
+    @id = 0
     @team = 0
     @stuck = 0
     @health = 100
@@ -25,12 +26,36 @@ class Unit
     h = @x + @y + @team + @stuck + @health + @sapping + @power + @dests.length
     for dest in @dests
       h += dest.x + dest.y
+      h += dest.wait if dest.wait?
+      h += 1 if dest.auto?
+      h += dest.tries if dest.tries?
     h
+
+  compare_with: (other) ->
+    check = (prop) =>
+      return if @[prop] == other[prop]
+      console.log "unit #{@id} #{prop}: #{other[prop]} != #{@[prop]}"
+
+    check 'x'
+    check 'y'
+    check 'team'
+    check 'stuck'
+    check 'health'
+    check 'sapping'
+    check 'power'
+
+    if other.dests.length != @dests.length
+      console.log "unit #{@id} dests: #{other.dests.length} != #{@dests.length}"
+
+    us = JSON.stringify(@dests)
+    them = JSON.stringify(other.dests)
+    console.log "unit #{@id} dests: #{them} != #{us}" unless them == us
 
 class Machine
   constructor: ->
     @callbacks =
       team_switch: []
+      resync: []
     @wipe()
 
   wipe: ->
@@ -185,13 +210,16 @@ class Machine
         continue if @try_move unit, x, 0
 
       dest.tries-- if dest.tries?
-      if unit.stuck > 1024 and not unit.sapping
-        unit.stuck = 0
-        unit.dests.unshift
-          x: unit.x + @rand(-30, 30)
-          y: unit.y + @rand(-30, 30)
-          tries: 40
-          auto: true
+      if unit.stuck > 1024
+        unit.stuck = 1024
+
+        if not unit.sapping
+          unit.stuck = 0
+          unit.dests.unshift
+            x: unit.x + @rand(-30, 30)
+            y: unit.y + @rand(-30, 30)
+            tries: 40
+            auto: true
 
     copy = @units
     @units = []
@@ -207,7 +235,9 @@ class Machine
       delete @server_hash[@tick]
       our_hash = @hash()
       unless server_hash == our_hash
-        console.log "Out of sync: #{server_hash} vs #{our_hash}"
+        for cb in @callbacks.resync
+          console.log "Out of sync: #{server_hash} vs #{our_hash}"
+          cb()
 
   hash: ->
     val = @tick + @random_pos + @width + @height + @last_id
@@ -215,6 +245,30 @@ class Machine
       val += unit.hash()
       val %= 2000000000
     val
+
+  compare_with: (other) ->
+    check = (prop) =>
+      return if @[prop] == other[prop]
+      console.log "#{prop}: #{other[prop]} != #{@[prop]}"
+
+    check 'tick'
+    check 'random_pos'
+    check 'width'
+    check 'height'
+    check 'last_id'
+
+    for i in [0..(@random_numbers.length)]
+      ours = @random_numbers[i]
+      theirs = other.random_numbers[i]
+      continue if ours == theirs
+      console.log "rand #{i}: #{ours} != #{theirs}"
+
+    for other_unit in other.units
+      unit = @units_by_id[other_unit.id]
+      unless unit
+        console.log "unit #{other_unit.id} missing"
+        continue
+      unit.compare_with other_unit
 
   generate_random: ->
     @random_numbers = []
@@ -255,7 +309,7 @@ class Machine
       for k, v of u
         unit[k] = v
       unit.id ||= ++@last_id
-      unit.power = 1000 if unit.team == 0 and !msg.power?
+      unit.power = 1000 if unit.team == 0 and !u.power?
       @units.push unit
       @units_by_id[unit.id] = unit
       @set unit.x, unit.y, unit
