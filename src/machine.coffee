@@ -231,7 +231,7 @@ class Machine
       for k, v of u
         unit[k] = v
       unit.id ||= ++@last_id
-      unit.power ||= 200 if unit.team == 0
+      unit.power ||= 1000 if unit.team == 0
       @units.push unit
       @units_by_id[unit.id] = unit
       @set unit.x, unit.y, unit
