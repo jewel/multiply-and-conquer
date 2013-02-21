@@ -113,10 +113,11 @@ class @Input
     if !@dragging and unit_under_cursor and unit_under_cursor.team != @state.team
       @state.orders = []
       for unit in selected
-        @client.send_orders unit, [
+        orders = if e.shiftKey then unit.dests.slice(0) else []
+        orders.push
           x: current_pos[0]
           y: current_pos[1]
-        ]
+        @client.send_orders unit, orders
 
       return
 
@@ -181,10 +182,12 @@ class @Input
         unit = selected.shift()
         set pos[0], pos[1]
 
-        @client.send_orders unit, [
+        orders = if e.shiftKey then unit.dests.slice(0) else []
+        orders.push
           x: pos[0]
           y: pos[1]
-        ]
+
+        @client.send_orders unit, orders
 
       for offset in search_space
         new_pos = [pos[0] + offset[0], pos[1] + offset[1]]

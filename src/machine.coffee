@@ -2,8 +2,8 @@
 # machines, including the server.  The simulation will run at the same speed on
 # all machines.
 #
-# Don't use rand() directly in here.  Instead, pre-generate an array of random
-# floats and keep reusing it.
+# Don't use Math.random() directly in here.  Instead, use @rand(), which is
+# deterministically random.
 #
 # Since we aren't very sensitive to lag in a RTS, we don't ever do anything
 # that hasn't been approved by the server first.  That saves us from needing to
@@ -177,7 +177,13 @@ class Machine
         continue if @try_move unit, x, 0
 
       dest.tries-- if dest.tries?
-      unit.stuck = 1024 if unit.stuck > 1024
+      if unit.stuck > 1024
+        unit.stuck = 0
+        unit.dests.unshift
+          x: unit.x + @rand(-30, 30)
+          y: unit.y + @rand(-30, 30)
+          tries: 40
+          auto: true
 
     copy = @units
     @units = []
@@ -188,7 +194,22 @@ class Machine
         continue
       @units.push unit
 
+  generate_random: ->
+    @random_numbers = []
+    @random_pos = 0
+    for i in [0..512]
+      @random_numbers.push Math.random()
+
+  rand: (min, max) ->
+    unless max?
+      max = min
+      min = 0
+    @random_pos++
+    num = @random_numbers[@random_pos % @random_numbers.length]
+    Math.round(num * (max-min) + min)
+
   serialize: ->
+    rand: @random_numbers
     units: @units
     impassable: @impassable
     tick: @tick
@@ -198,6 +219,10 @@ class Machine
   deserialize: (msg) ->
     @wipe()
     @tick = msg.tick || 0
+    if msg.rand
+      @random_numbers = msg.rand
+    else
+      @generate_random()
     @width = msg.width
     @height = msg.height
 
