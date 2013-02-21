@@ -16,8 +16,8 @@ process.stdin.on 'end', ->
   format = lines[index++]
   note = lines[index++]
   dims = lines[index++].split(/\ /)
-  width = dims[0]
-  height = dims[1]
+  width = parseInt(dims[0], 10)
+  height = parseInt(dims[1], 10)
   depth = lines[index++]
 
   x = 0

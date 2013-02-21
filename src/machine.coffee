@@ -21,6 +21,12 @@ class Unit
     @power = 0
     @dests = []
 
+  hash: ->
+    h = @x + @y + @team + @stuck + @health + @sapping + @power + @dests.length
+    for dest in @dests
+      h += dest.x + dest.y
+    h
+
 class Machine
   constructor: ->
     @callbacks =
@@ -206,15 +212,15 @@ class Machine
   hash: ->
     val = @tick + @random_pos + @width + @height + @last_id
     for unit in @units
-      val += unit.x + unit.y + unit.health + unit.power + unit.stuck
+      val += unit.hash()
       val %= 2000000000
     val
 
   generate_random: ->
     @random_numbers = []
     @random_pos = 0
-    for i in [0..512]
-      @random_numbers.push Math.random()
+    for i in [0...512]
+      @random_numbers.push Math.round(Math.random() * 1000000000)
 
   rand: (min, max) ->
     unless max?
@@ -222,7 +228,7 @@ class Machine
       min = 0
     @random_pos++
     num = @random_numbers[@random_pos % @random_numbers.length]
-    Math.round(num * (max-min) + min)
+    num % (max-min) + min
 
   serialize: ->
     random_numbers: @random_numbers
@@ -249,7 +255,7 @@ class Machine
       for k, v of u
         unit[k] = v
       unit.id ||= ++@last_id
-      unit.power ||= 1000 if unit.team == 0
+      unit.power = 1000 if unit.team == 0 and !msg.power?
       @units.push unit
       @units_by_id[unit.id] = unit
       @set unit.x, unit.y, unit
