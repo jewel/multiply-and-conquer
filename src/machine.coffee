@@ -25,6 +25,7 @@ class Machine
   constructor: ->
     @callbacks =
       team_switch: []
+      new_orders: []
     @wipe()
 
   wipe: ->
@@ -44,6 +45,8 @@ class Machine
     @callbacks[event].push func
 
   new_orders: (msg) ->
+    for cb in @callbacks.new_orders
+      cb(msg)
     @pending_orders.push msg
 
   update: ->

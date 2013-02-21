@@ -4,25 +4,40 @@ class @Display
     @ctx = @canvas.getContext('2d')
     @state = state
     @machine = machine
+    @dest_changed = true
+    @machine.on 'new_orders', =>
+      @dest_changed = true
 
   draw: ->
-    if @canvas.height != @machine.height or @canvas.width != @machine.width
+    if Math.round(@canvas.height) != Math.round(@machine.height) or Math.round(@canvas.width) != Math.round(@machine.width)
       @canvas.height = @machine.height
       @canvas.width = @machine.width
+      @image = null
 
+    @first_draw()
+
+    @draw_dests()
+
+    @draw_units()
+
+    @ctx.putImageData @image, 0, 0
+
+    @draw_selection()
+    @draw_orders()
+
+  first_draw: ->
+    return if @image
     @ctx.save()
     @ctx.fillStyle = '#444'
     @ctx.fillRect 0, 0, @machine.width, @machine.height
     @ctx.restore()
 
-
     @image = @ctx.getImageData 0, 0, @machine.width, @machine.height
 
-    for pos in @machine.impassable
-      @set pos.x, pos.y, 0, 0, 0
-
-    @dests = []
-    @dests[@machine.width*@machine.height] = false
+  draw_dests: ->
+    return unless @dest_changed
+    @dest_changed = false
+    @dests = new Uint8Array(@machine.width * @machine.height)
     for unit in @machine.units
       continue unless unit.team == @state.team
       local = @state.local(unit)
@@ -33,42 +48,43 @@ class @Display
         else
           i = Math.floor local.intensity * 32 + 64 - 16
         @set dest.x, dest.y, i, i, i
-        @dests[dest.y*@machine.width + dest.x] = true
+        @dests[dest.y*@machine.width + dest.x] = 1
 
-    if Uint8Array?
-      @drawn = new Uint8Array(@machine.width*@machine.height)
-    else
-      @drawn = []
+  draw_units: ->
+    drawn = new Uint8Array(@machine.width*@machine.height)
+
+    queue = []
+
     for unit in @machine.units when unit.team == @state.team
-      @show_location unit.x, unit.y, 11
+      queue.push [unit.x, unit.y, 0]
 
-    @ctx.putImageData @image, 0, 0
+    count = queue.length * 8 * 8
 
-    @draw_selection()
-    @draw_orders()
+    while count-- > 0
+      pos = queue.shift()
+      index = pos[1] * @machine.width + pos[0]
+      continue if drawn[index]
+      drawn[index] = 1
+      res = @draw_pos pos[0], pos[1], pos[2]
+      continue unless res
+      queue.push [pos[0] + 1, pos[1], pos[2]+1]
+      queue.push [pos[0], pos[1] + 1, pos[2]+1]
+      queue.push [pos[0] - 1, pos[1], pos[2]+1]
+      queue.push [pos[0], pos[1] - 1, pos[2]+1]
 
-  show_location: (x, y, depth) ->
-    depth--
-    return if depth <= 0
-    index = y * @machine.width + x
-    return if @drawn[index] >= depth
-
-    unless @drawn[index]
-      unit = @machine.get x, y
-      if unit == true
-        return
-      else if !unit
-        @set x, y, 127, 127+16, 127 unless @dests[index]
-      else
-        @draw_unit unit
-
-    @drawn[index] = depth
-    @show_location x+1, y, depth
-    @show_location x-1, y, depth
-    @show_location x, y+1, depth
-    @show_location x, y-1, depth
-    return
-
+  draw_pos: (x, y, mask) ->
+    unit = @machine.get x, y
+    if unit == true
+      @set x, y, 0, 0, 0
+      return false
+    else if !unit
+      index = y * @machine.width + x
+      a = 127 - mask
+      a = 68 if a < 68
+      @set x, y, a, a, a unless @dests[index]
+    else
+      @draw_unit unit
+    return true
 
   draw_unit: (unit) ->
     local = @state.local(unit)
