@@ -25,8 +25,9 @@ class @Client
 
     @socket.on 'error', (err) ->
 
-    @socket.on 'tick', (tick) =>
-      @machine.server_tick = tick
+    @socket.on 'tick', (msg) =>
+      @machine.server_tick = msg.tick
+      @machine.server_hash[msg.tick] = msg.hash
 
   send_orders: (unit, orders) ->
     @socket.emit 'orders'

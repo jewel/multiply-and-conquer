@@ -29,6 +29,7 @@ class Machine
 
   wipe: ->
     @server_tick = 0
+    @server_hash = {}
     @units = []
     @units_by_id = {}
     @impassable = []
@@ -37,6 +38,7 @@ class Machine
     @tick = 0
     @pending_orders = []
     @last_id = 0
+    @generate_random()
 
     @map = []
 
@@ -177,7 +179,7 @@ class Machine
         continue if @try_move unit, x, 0
 
       dest.tries-- if dest.tries?
-      if unit.stuck > 1024
+      if unit.stuck > 1024 and not unit.sapping
         unit.stuck = 0
         unit.dests.unshift
           x: unit.x + @rand(-30, 30)
@@ -194,6 +196,20 @@ class Machine
         continue
       @units.push unit
 
+    if @server_hash[@tick]
+      server_hash = @server_hash[@tick]
+      delete @server_hash[@tick]
+      our_hash = @hash()
+      unless server_hash == our_hash
+        console.log "Out of sync: #{server_hash} vs #{our_hash}"
+
+  hash: ->
+    val = @tick + @random_pos + @width + @height + @last_id
+    for unit in @units
+      val += unit.x + unit.y + unit.health + unit.power + unit.stuck
+      val %= 2000000000
+    val
+
   generate_random: ->
     @random_numbers = []
     @random_pos = 0
@@ -209,7 +225,8 @@ class Machine
     Math.round(num * (max-min) + min)
 
   serialize: ->
-    rand: @random_numbers
+    random_numbers: @random_numbers
+    random_pos: @random_pos
     units: @units
     impassable: @impassable
     tick: @tick
@@ -219,10 +236,11 @@ class Machine
   deserialize: (msg) ->
     @wipe()
     @tick = msg.tick || 0
-    if msg.rand
-      @random_numbers = msg.rand
+    if msg.random_numbers?
+      @random_numbers = msg.random_numbers
     else
       @generate_random()
+    @random_pos = msg.random_pos || 0
     @width = msg.width
     @height = msg.height
 
@@ -235,6 +253,8 @@ class Machine
       @units.push unit
       @units_by_id[unit.id] = unit
       @set unit.x, unit.y, unit
+
+    @last_id = @units.length
 
     for i in msg.impassable
       @impassable.push i

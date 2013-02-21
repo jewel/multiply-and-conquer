@@ -41,7 +41,9 @@ machine.deserialize(data)
 update = ->
   machine.server_tick++
   machine.update()
-  broadcast_all 'tick', machine.tick
+  broadcast_all 'tick'
+    tick: machine.tick
+    hash: machine.hash()
 
   setTimeout update, 50
 

@@ -1,8 +1,8 @@
 # This contains the main code for the client, which sets up and connects all
 # the necessary pieces.
 
-state = new State()
-machine = new Machine()
+@state = state = new State()
+@machine = machine = new Machine()
 display = new Display(state, machine)
 client = new Client(state, machine)
 input = new Input(state, machine, client)
