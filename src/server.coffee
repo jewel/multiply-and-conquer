@@ -23,7 +23,7 @@ server = http.createServer (req,res) ->
       when 'html' then 'text/html'
       else
         console.log "Unknown content type: #{ext}"
-    res.writeHead 200
+    res.writeHead 200,
       'Content-Type': content_type
     res.write data, 'utf8'
     res.end()
@@ -41,7 +41,7 @@ machine.deserialize(data)
 update = ->
   machine.server_tick++
   machine.update()
-  broadcast_all 'tick'
+  broadcast_all 'tick', 
     tick: machine.tick
     hash: machine.hash()
 
