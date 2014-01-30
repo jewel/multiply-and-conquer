@@ -34,7 +34,7 @@ class @Client
       @machine.server_hash[msg.tick] = msg.hash
 
   send_orders: (unit, orders) ->
-    @socket.emit 'orders'
+    @socket.emit 'orders',
       id: unit.id
       orders: orders
 
